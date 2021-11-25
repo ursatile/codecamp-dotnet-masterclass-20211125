@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
+using EasyNetQ;
 
 namespace Autobarn.Website {
 	public class Startup {
@@ -34,6 +35,9 @@ namespace Autobarn.Website {
 					services.AddSingleton<IAutobarnDatabase, AutobarnCsvFileDatabase>();
 					break;
 			}
+
+            var bus = RabbitHutch.CreateBus("amqps://uzvpuvak:SE3ABvHsuIbBMBelslbpZoHDIK1iyzar@rattlesnake.rmq.cloudamqp.com/uzvpuvak");
+            services.AddSingleton<IBus>(bus);
 
 			services.AddScoped<AutobarnSchema>();
 			services.AddGraphQL(options => options.EnableMetrics = false)

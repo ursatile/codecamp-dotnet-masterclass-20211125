@@ -3,6 +3,8 @@ using Autobarn.Data.Entities;
 using Autobarn.Website.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using System.Dynamic;
+using System.Linq;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -18,9 +20,28 @@ namespace Autobarn.Website.Controllers.api {
 
 		// GET: api/vehicles
 		[HttpGet]
-		public IEnumerable<Vehicle> Get() {
-			return db.ListVehicles();
-		}
+		[Produces("application/hal+json")]
+		public IActionResult Get(int index = 0, int count = 10) {
+			var items = db.ListVehicles().Skip(index).Take(count);
+			var total = db.CountVehicles();			
+			dynamic _links = new ExpandoObject();
+			_links.self = new { href = "/api/vehicles" };
+			
+			if (index > 0) {
+				_links.prev = new { href = $"/api/vehicles?index={index-count}&count={count}"};
+				_links.first = new  { href = $"/api/vehicles?index=0&count={count}"};
+			}
+			if (index + count < total) {
+				_links.next = new { href = $"/api/vehicles?index={index+count}&count={count}"};
+				_links.final = new  { href = $"/api/vehicles?index={total-count}&count={count}"};
+			}
+			
+			var result = new {
+				_links,
+				items
+			};
+			return Ok(result); 
+		} 
 
 		// GET api/vehicles/ABC123
 		[HttpGet("{id}")]

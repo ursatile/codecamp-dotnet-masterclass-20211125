@@ -22,6 +22,19 @@ namespace Autobarn.Website.Controllers.api {
 
         public static dynamic ToHal(this Vehicle vehicle) {
             var result = vehicle.ToDynamic();
+            result._actions = new {
+                delete = new {
+					name = "Delete",
+					method = "DELETE",
+					href = $"/api/vehicles/{vehicle.Registration}"
+				},
+                update = new {
+                    name = "Update a vehicle",
+                    method = "PUT",
+                    type = "application/json",
+                    href = $"/api/vehicles/{vehicle.Registration}"
+                }
+            };
 			result._links = new {
 				self = new {
 					href = $"/api/vehicles/{vehicle.Registration}"                    

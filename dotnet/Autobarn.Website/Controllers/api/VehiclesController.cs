@@ -31,7 +31,7 @@ namespace Autobarn.Website.Controllers.api {
 					type = "application/json",
 					method = "POST",
 					href = "/api/vehicles"
-				}
+				}				
 			};
 			var result = new {
 				_links,

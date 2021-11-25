@@ -10,12 +10,13 @@ namespace Autobarn.PricingClient {
         const string AMQP = "amqps://uzvpuvak:SE3ABvHsuIbBMBelslbpZoHDIK1iyzar@rattlesnake.rmq.cloudamqp.com/uzvpuvak";
 
         private static Pricer.PricerClient grpcClient;
+        private static IBus bus;
         static void Main(string[] args) {
 
             var channel = GrpcChannel.ForAddress("https://workshop.ursatile.com:5003/");
             grpcClient = new Pricer.PricerClient(channel);
 
-            var bus = RabbitHutch.CreateBus(AMQP);
+            bus = RabbitHutch.CreateBus(AMQP);
             bus.PubSub.Subscribe<NewVehicleMessage>("Autobarn.PricingClient", HandleNewVehicleMessage);
             Console.WriteLine("Listening for NewVehicleMessages");
             Console.ReadLine();
@@ -28,7 +29,24 @@ namespace Autobarn.PricingClient {
                 Year = nvm.Year
             };
             var reply = await grpcClient.GetPriceAsync(request);
-            Console.WriteLine($"New vehicle costs {reply.Price} {reply.CurrencyCode}");
+            var newVehiclePriceMessage = nvm.ToNewVehiclePriceMessage(reply.Price, reply.CurrencyCode);
+            await bus.PubSub.PublishAsync(newVehiclePriceMessage);
+        }
+    }
+
+    public static class MessageExtensions {
+        public static NewVehiclePriceMessage ToNewVehiclePriceMessage(this NewVehicleMessage incomingMessage, int price,
+            string currencyCode) {
+            return new NewVehiclePriceMessage {
+                Manufacturer = incomingMessage.Manufacturer,
+                ModelCode = incomingMessage.ModelCode,
+                Color = incomingMessage.Color,
+                ModelName = incomingMessage.ModelName,
+                Registration = incomingMessage.Registration,
+                Year = incomingMessage.Year,
+                CurrencyCode = currencyCode,
+                Price = price
+            };
         }
     }
 }

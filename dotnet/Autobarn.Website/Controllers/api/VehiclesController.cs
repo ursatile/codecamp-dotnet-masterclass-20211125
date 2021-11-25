@@ -36,6 +36,9 @@ namespace Autobarn.Website.Controllers.api {
 			var result = new {
 				_links,
 				_actions,
+				total,
+				index,
+				count,
 				items = items.Select(item => item.ToHal())				
 			};
 			return Ok(result); 

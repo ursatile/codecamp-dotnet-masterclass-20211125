@@ -24,21 +24,19 @@ namespace Autobarn.Website.Controllers.api {
 		public IActionResult Get(int index = 0, int count = 10) {
 			var items = db.ListVehicles().Skip(index).Take(count);
 			var total = db.CountVehicles();			
-			dynamic _links = new ExpandoObject();
-			_links.self = new { href = "/api/vehicles" };
-			
-			if (index > 0) {
-				_links.prev = new { href = $"/api/vehicles?index={index-count}&count={count}"};
-				_links.first = new  { href = $"/api/vehicles?index=0&count={count}"};
-			}
-			if (index + count < total) {
-				_links.next = new { href = $"/api/vehicles?index={index+count}&count={count}"};
-				_links.final = new  { href = $"/api/vehicles?index={total-count}&count={count}"};
-			}
-			
+			dynamic _links = HypermediaExtensions.Paginate("/api/vehicles", index, count, total);			
+			dynamic _actions = new {
+				create = new {
+					name = "Create",
+					type = "application/json",
+					method = "POST",
+					href = "/api/vehicles"
+				}
+			};
 			var result = new {
 				_links,
-				items
+				_actions,
+				items = items.Select(item => item.ToHal())				
 			};
 			return Ok(result); 
 		} 
@@ -48,7 +46,8 @@ namespace Autobarn.Website.Controllers.api {
 		public IActionResult Get(string id) {
 			var vehicle = db.FindVehicle(id);
 			if (vehicle == default) return NotFound();
-			return Ok(vehicle);
+			var result = vehicle.ToHal();
+			return Ok(result);
 		}
 
 		// POST api/vehicles
@@ -62,7 +61,8 @@ namespace Autobarn.Website.Controllers.api {
 				VehicleModel = vehicleModel
 			};
 			db.CreateVehicle(vehicle);
-			return Ok(dto);
+			var result = vehicle.ToHal();
+			return Created($"{result._links.self}", result);
 		}
 
 		// PUT api/vehicles/ABC123
